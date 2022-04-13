@@ -5,8 +5,8 @@ defmodule Livebook.MixProject do
   @version "0.5.2"
   @description "Interactive and collaborative code notebooks - made with Phoenix LiveView"
 
-  @app_elixir_version "1.13.2"
-  @app_otp_version "24.2"
+  @app_elixir_version "1.13.4"
+  @app_otp_version "24.3"
 
   def project do
     [
@@ -22,7 +22,9 @@ defmodule Livebook.MixProject do
       escript: escript(),
       package: package(),
       default_release: :livebook,
-      releases: releases()
+      releases: releases(),
+      preferred_cli_env: [app: :prod],
+      preferred_cli_target: [app: :app]
     ]
   end
 
@@ -56,7 +58,8 @@ defmodule Livebook.MixProject do
     [
       "dev.setup": ["deps.get", "cmd npm install --prefix assets"],
       "dev.build": ["cmd npm run deploy --prefix ./assets"],
-      "format.all": ["format", "cmd npm run format --prefix ./assets"]
+      "format.all": ["format", "cmd npm run format --prefix ./assets"],
+      app: ["app.run phx.server"]
     ]
   end
 
