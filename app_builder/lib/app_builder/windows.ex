@@ -36,6 +36,9 @@ defmodule AppBuilder.Windows do
     erl_exe = Path.join([tmp_dir, "rel", "erts-#{release.erts_version}", "bin", "erl.exe"])
     rcedit_path = ensure_rcedit()
     cmd!(rcedit_path, ["--set-icon", app_icon_path, erl_exe])
+    manifest_path = Path.join(tmp_dir, "manifest.xml")
+    File.write!(manifest_path, manifest())
+    cmd!(rcedit_path, ["--application-manifest", manifest_path, erl_exe])
 
     File.write!(Path.join(tmp_dir, "#{app_name}.vbs"), launcher_vbs(release, options))
     nsi_path = Path.join(tmp_dir, "#{app_name}.nsi")
@@ -49,6 +52,21 @@ defmodule AppBuilder.Windows do
     )
 
     release
+  end
+
+  # https://docs.microsoft.com/en-us/windows/win32/hidpi/setting-the-default-dpi-awareness-for-a-process
+  defp manifest do
+    """
+    <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
+      <asmv3:application>
+        <asmv3:windowsSettings>
+          <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true</dpiAware>
+          <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2</dpiAwareness>
+        </asmv3:windowsSettings>
+      </asmv3:application>
+    </assembly>
+    """
   end
 
   code = """
@@ -170,11 +188,11 @@ defmodule AppBuilder.Windows do
   ' > bin/release rpc "mod.windows_connected(url)"
   '
   ' We send the URL through IO, as opposed through the rpc expression, to avoid RCE.
-  cmd = "echo """ & url & """ | """ & path & """ rpc <%= inspect(module) %>.windows_connected(IO.read(:line))"
+  cmd = "echo \""" & url & \""" | \""" & path & \""" rpc <%= inspect(module) %>.windows_connected(IO.read(:line))"
   code = shell.Run("cmd /c " & cmd, 0)
 
   ' > bin/release start
-  cmd = """" & path & """ start"
+  cmd = \"""" & path & \""" start"
   env("<%= String.upcase(app_name) <> "_URL" %>") = url
   code = shell.Run("cmd /c " & cmd & " >> .\Logs\<%= app_name %>.log 2>&1", 0)
   """
